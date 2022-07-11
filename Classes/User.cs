@@ -20,5 +20,12 @@ namespace csharp_biblioteca.Classes
             Email = email;
             Password = password;
         }
+        public User(string email, string password)
+        {
+            Surname = null;
+            Name = null;
+            Email = email;
+            Password = password;
+        }
     }
 }

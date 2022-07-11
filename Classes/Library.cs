@@ -60,11 +60,8 @@ namespace csharp_biblioteca.Classes
             try
             {
                 connectionSql.Open();
-
-                // dichiarazione query
                 string query = "INSERT INTO [users] (surname, name, email, password) VALUES (@Surname, @Name, @Email, @Password)";
 
-                // creazione comando ed esecuzione query
                 using (SqlCommand cmd = new SqlCommand(query, connectionSql))
                 {
                     cmd.Parameters.Add(new SqlParameter("@Surname", surname));
@@ -97,6 +94,30 @@ namespace csharp_biblioteca.Classes
             Console.Write($"Password: ");
             string password = Console.ReadLine();
 
+            try
+            {
+                connectionSql.Open();
+                string query = "SELECT TOP 1 * FROM [users] WHERE email=@Email AND password=@password";
+                using (SqlCommand cmd = new SqlCommand(query, connectionSql))
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if(email == reader.GetString(2) && password == reader.GetString(3)){
+                        Console.WriteLine("Welcome, you are logged in");
+                        UserLogged = new User(email, password);
+                        this.LoggedPage();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed login");
+                        this.UnloggedPage();
+                    }
+                }
+            }catch(Exception ex)
+            {
+                ex.ToString();
+            }
+
+            connectionSql.Close();
 
 
         }
