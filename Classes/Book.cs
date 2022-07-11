@@ -6,22 +6,21 @@ using System.Threading.Tasks;
 
 namespace csharp_biblioteca.Classes
 {
-    internal class Book : Document
+    internal class Book
     {
-        public string Isbn { get; set; }
-        public uint PageNum { get; set; }
-
-        public Book(string isbn, string title, uint year, string sector, string state, string shelf, string author, uint pageNum) : base(title, year, sector, state, shelf, author)
+        public string Title { get; set; }
+        public string Author { get; set; }
+        public string Year { get; set; }
+        public string Plot { get; set; }
+        public string AgeRange { get; set; }
+        public Book(string title, string author, string year, string plot, string ageRange)
         {
-            Isbn = isbn;
-            PageNum = pageNum;
-        }
-
-        public override void printInfo()
-        {
-            base.printInfo();
-            Console.WriteLine($"Isbn: {Isbn}");
-            Console.WriteLine($"Page number: {PageNum}");
-        }
+            Title = title;
+            Author = author;
+            Year = year;
+            Plot = plot;
+            AgeRange = ageRange;
+        }    
+      
     }
 }

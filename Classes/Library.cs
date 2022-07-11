@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,15 +15,8 @@ namespace csharp_biblioteca.Classes
         public List<User> Users { get; set; }
 
         public List<Book> Books { get; set; }
-        public List<Dvd> Dvds { get; set; }
 
-        public Library(List<User> users, List<Book> books, List<Dvd> dvds)
-        {
-            IsLogged = false;
-            Users = users;
-            Books = books;
-            Dvds = dvds;
-        }
+        public Library() { }
 
         public void UnloggedPage()
         {
@@ -46,24 +40,49 @@ namespace csharp_biblioteca.Classes
             }
         }
 
+        SqlConnection connectionSql = new SqlConnection("Data Source=localhost;Initial Catalog=biblioteca;Integrated Security=True");
         private void Register()
         {
             Console.WriteLine($"\n* REGISTER *\n");
             Console.WriteLine($"Insert your data:");
 
-            Console.Write($"Name: ");
-            string name = Console.ReadLine();
+
             Console.Write($"Surname: ");
             string surname = Console.ReadLine();
+            Console.Write($"Name: ");
+            string name = Console.ReadLine();
             Console.Write($"Email: ");
             string email = Console.ReadLine();
             Console.Write($"Password: ");
             string password = Console.ReadLine();
-            Console.Write($"Telephone: ");
-            string telephone = Console.ReadLine();
+   
 
-            User user = new User(surname, name, email, password, telephone);
-            Users.Add(user);
+            try
+            {
+                connectionSql.Open();
+
+                // dichiarazione query
+                string query = "INSERT INTO [users] (surname, name, email, password) VALUES (@Surname, @Name, @Email, @Password)";
+
+                // creazione comando ed esecuzione query
+                using (SqlCommand cmd = new SqlCommand(query, connectionSql))
+                {
+                    cmd.Parameters.Add(new SqlParameter("@Surname", surname));
+                    cmd.Parameters.Add(new SqlParameter("@Name", name));
+                    cmd.Parameters.Add(new SqlParameter("@Email", email));
+                    cmd.Parameters.Add(new SqlParameter("@Password", password));
+
+                    int affectedRows = cmd.ExecuteNonQuery(); // per eseguire l'insert
+                    Console.WriteLine(affectedRows);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            connectionSql.Close();
+
 
             this.Login();
         }
@@ -78,24 +97,8 @@ namespace csharp_biblioteca.Classes
             Console.Write($"Password: ");
             string password = Console.ReadLine();
 
-            foreach(User user in Users)
-            {
-                if(user.Email == email && user.Password == password)
-                {
-                    IsLogged = true;
-                    UserLogged = user;
 
-                    Console.WriteLine($"\nLogged successfully");
 
-                    this.LoggedPage();
-                }
-            }
-
-            if(!IsLogged)
-            {
-                Console.WriteLine($"Login failed");
-                this.UnloggedPage();
-            }
         }
 
         private void LoggedPage()
@@ -115,10 +118,10 @@ namespace csharp_biblioteca.Classes
                     this.SearchBook();
                     break;
                 case 2:
-                    this.SearchDvd();
+                    //this.SearchDvd();
                     break;
                 case 3:
-                    this.ViewRentals();
+                    //this.ViewRentals();
                     break;
                 case 4:
                     this.Logout();
@@ -150,7 +153,7 @@ namespace csharp_biblioteca.Classes
             switch (input)
             {
                 case 1:
-                    this.SearchBookByIsbn();
+                    //this.SearchBookByIsbn();
                     break;
                 case 2:
                     this.SearchBookByTitle();
@@ -164,29 +167,6 @@ namespace csharp_biblioteca.Classes
             }
         }
 
-        private void SearchBookByIsbn()
-        {
-            Console.WriteLine($"\n* SEARCH BOOK *\n");
-            Console.Write($"Insert ISBN: ");
-            string isbn = Console.ReadLine();
-
-            bool foundBook = false;
-
-            foreach(Book book in Books)
-            {
-                if(book.Isbn == isbn)
-                {
-                    foundBook = true;
-                    this.BookInfo(book);
-                }
-            }
-
-            if(!foundBook)
-            {
-                Console.WriteLine("\nBook not found.");
-                this.SearchBook();
-            }
-        }
 
         private void SearchBookByTitle()
         {
@@ -226,15 +206,15 @@ namespace csharp_biblioteca.Classes
             switch (input)
             {
                 case 1:
-                    book.printInfo();
+                    //book.printInfo();
                     Console.WriteLine();
                     this.BookInfo(book);
                     break;
                 case 2:
-                    this.BorrowBook(book);
+                    //this.BorrowBook(book);
                     break;
                 case 3:
-                    this.ReturnBook(book);
+                    //this.ReturnBook(book);
                     break;
                 case 4:
                     this.SearchBook();
@@ -245,225 +225,5 @@ namespace csharp_biblioteca.Classes
             }
         }
 
-        private void BorrowBook(Book book)
-        {
-            if(book.State == "available")
-            {
-                Console.WriteLine($"\n* BORROW BOOK *\n");
-
-                Console.Write($"Start date: ");
-                string startDate = Console.ReadLine();
-                Console.Write($"End date: ");
-                string endDate = Console.ReadLine();
-
-                // crea prestito
-                Rental rental = new Rental(book, UserLogged, startDate, endDate);
-
-                // aggiungi prestito alla lista di prestiti dell'utente
-                UserLogged.getRentals().Add(rental);
-
-                book.State = "borrowed";
-                Console.WriteLine($"\nYou have successfully borrowed the book!\n");
-
-                this.LoggedPage();
-            }
-            else
-            {
-                Console.WriteLine($"\nThe book is not available!\n");
-                this.BookInfo(book);
-            }
-        }
-
-        private void ViewRentals()
-        {
-            if(UserLogged.getRentals().Count < 1)
-            {
-                Console.WriteLine("\nNo rentals to show.");
-            }
-            else
-            {
-                foreach (Rental rental in UserLogged.getRentals())
-                {
-                    rental.printInfo();
-                }
-            }
-
-            this.LoggedPage();
-        }
-
-        private void ReturnBook(Book book)
-        {
-            book.State = "available";
-
-            Rental rentalToDelete = null;
-
-            foreach (Rental rental in UserLogged.getRentals())
-            {
-                if(rental.Document.Title == book.Title)
-                {
-                    rentalToDelete = rental;
-                }
-            }
-            UserLogged.getRentals().Remove(rentalToDelete);
-
-            Console.WriteLine($"\nThe book '{book.Title}' has been returned successfully!");
-            this.LoggedPage();
-        }
-
-        private void ReturnDvd(Dvd dvd)
-        {
-            dvd.State = "available";
-
-            Rental rentalToDelete = null;
-
-            foreach (Rental rental in UserLogged.getRentals())
-            {
-                if (rental.Document.Title == dvd.Title)
-                {
-                    rentalToDelete = rental;
-                }
-            }
-            UserLogged.getRentals().Remove(rentalToDelete);
-
-            Console.WriteLine($"\nThe dvd '{dvd.Title}' has been returned successfully!");
-            this.LoggedPage();
-        }
-
-        private void SearchDvd()
-        {
-            Console.WriteLine($"\n* SEARCH DVD *\n");
-            Console.WriteLine($"1. Search by serial number");
-            Console.WriteLine($"2. Search by title");
-            Console.WriteLine($"3. Back");
-            Console.WriteLine($"4. Exit\n");
-
-            int input = Convert.ToInt32(Console.ReadLine());
-
-            switch (input)
-            {
-                case 1:
-                    this.SearchDvdBySerial();
-                    break;
-                case 2:
-                    this.SearchDvdByTitle();
-                    break;
-                case 3:
-                    this.LoggedPage();
-                    break;
-                case 4:
-                    return;
-                    break;
-            }
-        }
-
-        private void SearchDvdBySerial()
-        {
-            Console.WriteLine($"\n* SEARCH DVD *\n");
-            Console.Write($"Insert serial number: ");
-            string serial = Console.ReadLine();
-
-            bool foundDvd = false;
-
-            foreach (Dvd dvd in Dvds)
-            {
-                if (dvd.SerialNumber == serial)
-                {
-                    foundDvd = true;
-                    this.DvdInfo(dvd);
-                }
-            }
-
-            if (!foundDvd)
-            {
-                Console.WriteLine("\nDvd not found.");
-                this.SearchBook();
-            }
-        }
-
-        private void SearchDvdByTitle()
-        {
-            Console.WriteLine($"\n* SEARCH DVD *\n");
-            Console.Write($"Insert title: ");
-            string title = Console.ReadLine();
-
-            bool foundDvd = false;
-
-            foreach (Dvd dvd in Dvds)
-            {
-                if (dvd.Title == title)
-                {
-                    foundDvd = true;
-                    this.DvdInfo(dvd);
-                }
-            }
-
-            if (!foundDvd)
-            {
-                Console.WriteLine("\nDvd not found.");
-                this.SearchBook();
-            }
-        }
-
-        private void DvdInfo(Dvd dvd)
-        {
-            Console.WriteLine($"\n* DVD MENU *\n");
-            Console.WriteLine($"1. View info");
-            Console.WriteLine($"2. Borrow dvd");
-            Console.WriteLine($"3. Return dvd");
-            Console.WriteLine($"4. Back");
-            Console.WriteLine($"5. Exit\n");
-
-            int input = Convert.ToInt32(Console.ReadLine());
-
-            switch (input)
-            {
-                case 1:
-                    dvd.printInfo();
-                    Console.WriteLine();
-                    this.DvdInfo(dvd);
-                    break;
-                case 2:
-                    this.BorrowDvd(dvd);
-                    break;
-                case 3:
-                    this.ReturnDvd(dvd);
-                    break;
-                case 4:
-                    this.SearchBook();
-                    break;
-                case 5:
-                    return;
-                    break;
-            }
-        }
-
-        private void BorrowDvd(Dvd dvd)
-        {
-            if (dvd.State == "available")
-            {
-                Console.WriteLine($"\n* BORROW DVD *\n");
-
-                Console.Write($"Start date: ");
-                string startDate = Console.ReadLine();
-                Console.Write($"End date: ");
-                string endDate = Console.ReadLine();
-
-                // crea prestito
-                Rental rental = new Rental(dvd, UserLogged, startDate, endDate);
-
-                // aggiungi prestito alla lista di prestiti dell'utente
-                UserLogged.getRentals().Add(rental);
-
-                dvd.State = "borrowed";
-                Console.WriteLine($"\nYou have successfully borrowed the dvd!\n");
-
-                this.LoggedPage();
-            }
-            else
-            {
-                Console.WriteLine($"\nThe dvd is not available!\n");
-                this.DvdInfo(dvd);
-            }
-        }
     }
 }
