@@ -97,19 +97,23 @@ namespace csharp_biblioteca.Classes
             try
             {
                 connectionSql.Open();
-                string query = "SELECT TOP 1 * FROM [users] WHERE email=@Email AND password=@password";
+                string query = "SELECT TOP 1 * FROM [users]";
                 using (SqlCommand cmd = new SqlCommand(query, connectionSql))
-                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    if(email == reader.GetString(2) && password == reader.GetString(3)){
-                        Console.WriteLine("Welcome, you are logged in");
-                        UserLogged = new User(email, password);
-                        this.LoggedPage();
-                    }
-                    else
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        Console.WriteLine("Failed login");
-                        this.UnloggedPage();
+                        reader.Read();
+                        if (email == reader.GetString(3) && password == reader.GetString(4))
+                        {
+                            Console.WriteLine("Welcome, you are logged in");
+                            UserLogged = new User(email, password);
+                            this.LoggedPage();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Failed login");
+                            this.UnloggedPage();
+                        }
                     }
                 }
             }catch(Exception ex)
